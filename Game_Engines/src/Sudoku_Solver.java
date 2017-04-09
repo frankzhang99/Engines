@@ -12,7 +12,7 @@ public class Sudoku_Solver {
 				{0, 0, 0, 0, 0, 0, 0, 0, 0},
 				{0, 0, 0, 0, 0, 0, 0, 0, 0},
 				{0, 0, 0, 0, 0, 0, 0, 0, 0},
-				{0, 0, 0, 0, 0, 0, 0, 0, 0}};
+				{0, 0, 0, 0, 0, 0, 8, 0, 0}};
 	
 	//grid to work on
 	static int grid[][] = new int[9][9];
@@ -24,9 +24,15 @@ public class Sudoku_Solver {
 				grid[i][j]=userInput[i][j];
 			}
 		}
-		
+		System.out.println("Original: ");
 		print(grid);
+		System.out.println("\n\n");
+		double start = System.currentTimeMillis();
+		System.out.println("Solved: ");
 		print(loop(0, 0, grid));
+		double stop = System.currentTimeMillis();
+		double used = stop - start;
+		System.out.println("\nThis took " + used + " milliseconds to solve");
 		//System.out.println(validity(2, 3, grid));
 		//String s = "020020001";
 		//System.out.println(check(s, 1));
@@ -35,7 +41,7 @@ public class Sudoku_Solver {
 	//main loop
 	public static int[][] loop (int y, int x, int[][] grid){
 		
-		while(!validity(8, 8, grid) || grid[8][8] == 0){
+		while(!checkAll(grid) || grid[8][8] == 0){
 			//while not solved
 			if (userInput[y][x] != 0){
 				int yy, xx;
@@ -87,6 +93,19 @@ public class Sudoku_Solver {
 		return check(vertical, goal) && check(horizontal, goal) && check(box, goal);
 	}
 	
+	//brute force checks whole board for error
+	public static boolean checkAll(int[][] grid){
+		for(int i = 0; i < 9; i++){
+			for(int j = 0; j < 9; j++){
+				if (!validity(i, j, grid)){
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+	
+	
 	//checks if a string of number only contains 1 goal number
 	public static boolean check(String s, int a){
 		int counter = 0;
@@ -100,7 +119,6 @@ public class Sudoku_Solver {
 	
 	//prints a grid
 	public static void print(int[][] grid){
-		System.out.println();
 		for (int i = 0; i < grid.length; i++){
 			for (int j = 0; j < grid[i].length; j++){
 				System.out.print(grid[i][j]);
