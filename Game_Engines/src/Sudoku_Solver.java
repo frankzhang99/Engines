@@ -5,7 +5,6 @@ public class Sudoku_Solver {
 		// TODO Auto-generated method stub
 		//Attempt for a sudoku solver
 		
-		System.out.println("Hello, World!");
+		
 	}
-
 }
