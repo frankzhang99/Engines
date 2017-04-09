@@ -4,9 +4,9 @@ public class Sudoku_Solver {
 	//mother grid user passed in
 	//use 0 to represent empty box
 	static int userInput[][] = new int[][]
-			   {{0, 0, 0, 1, 2, 3, 0, 0, 0},
-				{0, 0, 0, 4, 5, 6, 0, 0, 0},
-				{0, 0, 0, 7, 8, 9, 0, 0, 0},
+			   {{0, 0, 0, 0, 0, 0, 0, 0, 0},
+				{0, 0, 0, 0, 0, 0, 0, 0, 0},
+				{0, 0, 0, 0, 0, 0, 0, 0, 0},
 				{0, 0, 0, 0, 0, 0, 0, 0, 0},
 				{0, 0, 0, 0, 0, 0, 0, 0, 0},
 				{0, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -25,11 +25,53 @@ public class Sudoku_Solver {
 			}
 		}
 		
-		//print(userInput);
-		System.out.println(validity(2, 3, grid));
+		print(grid);
+		print(loop(0, 0, grid));
+		//System.out.println(validity(2, 3, grid));
 		//String s = "020020001";
 		//System.out.println(check(s, 1));
 	}
+	
+	//main loop
+	public static int[][] loop (int y, int x, int[][] grid){
+		
+		while(!validity(8, 8, grid) || grid[8][8] == 0){
+			//while not solved
+			if (userInput[y][x] != 0){
+				int yy, xx;
+				if (x == 8){
+					yy = y+1;
+					xx=0;
+				} else {
+					yy = y;
+					xx = x+1;
+				}
+				loop(yy, xx, grid);
+			} else {
+				if (grid[y][x] < 9){
+					grid[y][x]++;
+					if (validity(y, x, grid)){
+						int yy, xx;
+						if (x == 8){
+							yy = y+1;
+							xx=0;
+						} else {
+							yy = y;
+							xx = x+1;
+						}
+						loop(yy, xx, grid);
+					}
+				} else {
+					grid[y][x] = 0;
+					break;
+				}
+			}
+		}
+		return grid;
+	}
+	
+	
+	
 	
 	//checks if a 9x9 grid at a given point is valid
 	//checks row, column, and 3x3 box
