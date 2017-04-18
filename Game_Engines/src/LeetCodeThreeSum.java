@@ -2,7 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Arrays;
 
-
+//first commit from school laptop test
 public class LeetCodeThreeSum {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
