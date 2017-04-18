@@ -3,6 +3,8 @@ import java.util.List;
 import java.util.Arrays;
 
 //first commit from school laptop test
+//FAILED ATTEMPT (TLE)
+//need to implement hashtable in version 2.0
 public class LeetCodeThreeSum {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
