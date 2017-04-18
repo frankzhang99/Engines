@@ -38,12 +38,12 @@ public class Sudoku_Solver_2 {
 		
 		
 		System.out.println("My sudoku");
-		print(board3);
+		print(board2);
 		double start = System.currentTimeMillis();
-		if (Solve(board3)){
+		if (Solve(board2)){
 			double stop = System.currentTimeMillis();
 			System.out.println("Found a solution!");
-			print(board3);
+			print(board2);
 			double used = stop - start;
 			System.out.println("This took " + used + " milliseconds to solve");
 		}else{
