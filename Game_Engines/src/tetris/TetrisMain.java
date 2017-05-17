@@ -1,5 +1,3 @@
-//https://www.youtube.com/watch?v=qPRWYyl41oQ&list=PLx2EVi2M-lqsJIFCbaDI-39Zh6NnIwJ1z
-
 package tetris;
 
 import java.awt.Canvas;
