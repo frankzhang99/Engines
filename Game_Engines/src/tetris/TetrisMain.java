@@ -29,6 +29,8 @@ public class TetrisMain extends Canvas implements Runnable, KeyListener {
 		frame.setResizable(false);
 		frame.setLayout(null);
 		
+		KeyGetter.loadKeys();
+		
 		JMenuBar bar = new JMenuBar();
 		bar.setBounds(0, 0, WIDTH, 25);
 		JMenu file = new JMenu("File");
@@ -50,6 +52,7 @@ public class TetrisMain extends Canvas implements Runnable, KeyListener {
 				alert.setSize(200, 150);
 				alert.setLayout(null);
 				alert.setLocationRelativeTo(null);
+				alert.setAlwaysOnTop(true);
 				
 				JLabel score = new JLabel("The high score is: " + highscore);
 				score.setBounds(5, 0, 200, 50);
@@ -111,6 +114,10 @@ public class TetrisMain extends Canvas implements Runnable, KeyListener {
 			render(g);
 			buf.show();
 		}
+	}
+	
+	public void init(){
+		
 	}
 	
 	public void update(){
