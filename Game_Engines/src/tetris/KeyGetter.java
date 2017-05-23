@@ -7,7 +7,7 @@ import java.util.HashMap;
 
 public class KeyGetter {
 	
-	private static HashMap<String, Integer> keys;
+	public static HashMap<String, Integer> keys;
 	
 	public static void loadKeys(){
 		keys = new HashMap<String, Integer>();
@@ -19,6 +19,7 @@ public class KeyGetter {
 						int num = f.getInt(null);
 						String name = KeyEvent.getKeyText(num);
 						keys.put(name, num);
+						System.out.println(name);
 					}
 					catch(Exception e){
 						e.printStackTrace();
