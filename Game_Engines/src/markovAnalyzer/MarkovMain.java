@@ -17,6 +17,12 @@ public class MarkovMain {
 		}
 		System.out.println();
 	}
+	public static void printArr (boolean[] A) {
+		for(int i = 0; i < A.length; i++) {
+			System.out.print(A[i] + " ");
+		}
+		System.out.println();
+	}
 	public static void print2DArr (int[][] A) {
 		for(int i = 0; i < A.length; i++) {
 			for(int j = 0; j < A[0].length; j++) {
@@ -26,6 +32,14 @@ public class MarkovMain {
 		}
 	}
 	public static void print2DArr (double[][] A) {
+		for(int i = 0; i < A.length; i++) {
+			for(int j = 0; j < A[0].length; j++) {
+				System.out.print(A[i][j] + " ");
+			}
+			System.out.println();
+		}
+	}
+	public static void print2DArr (boolean[][] A) {
 		for(int i = 0; i < A.length; i++) {
 			for(int j = 0; j < A[0].length; j++) {
 				System.out.print(A[i][j] + " ");
@@ -112,6 +126,59 @@ public class MarkovMain {
 			accN[i] = stepN(acc, i);
 		}
 		
+		int classesCount = 0;
+		boolean[][] classesTemp = new boolean[numClasses][numClasses];
+		boolean[] flags = new boolean[numClasses];
+		for(int i = 0; i < numClasses; i++) {
+			flags[i] = false;
+			for(int j = 0; j < numClasses; j++) {
+				classesTemp[i][j] = false;
+			}
+		}
+		for(int i = 0; i < numClasses; i++) {
+			if (!flags[i]) {
+				flags[i] = true;
+				classesTemp[classesCount][i] = true;
+				for(int j = i + 1; j < numClasses; j++) {
+					if(!flags[j] && accN[i][j] == 1 && accN[j][i] == 1) {
+						flags[j] = true;
+						classesTemp[classesCount][j] = true;
+					}
+				}
+				classesCount++;
+			}
+		}
+		
+		int[][] classes = new int[classesCount][numClasses];
+		for(int i = 0; i < classesCount; i++) {
+			for(int j = 0; j < numClasses; j++) {
+				classes[i][j] = -1;
+			}
+		}
+		for(int i = 0; i < classesCount; i++) {
+			int cur = 0;
+			for(int j = 0; j < numClasses; j++) {
+				if(classesTemp[i][j]) {
+					classes[i][cur] = j;
+					cur++;
+				}
+			}
+		}
+		
+		//true = recurrent, false = transient
+		boolean[] classTypes = new boolean[classesCount];
+		for(int i = 0; i < classesCount; i++) {
+			boolean ans = true;
+			for(int j = 0; j < numClasses; j++){
+				if(classesTemp[i][j]) {
+					for(int k = 0; k < numClasses; k++) {
+						if (!classesTemp[i][k] && accN[j][k] == 1) ans = false;
+					}
+				}
+			}
+			classTypes[i] = ans;
+		}
+		
 		System.out.println("TPM: ");
 		print2DArr(TPM);
 		System.out.println("accOne: ");
@@ -120,7 +187,13 @@ public class MarkovMain {
 		printArr (alpha);
 		System.out.println("accN: ");
 		print2DArr (accN);
-		
+		System.out.println("Number of Classes: " + classesCount);
+		System.out.println("classesTemp: ");
+		print2DArr (classesTemp);
+		System.out.println("classes: ");
+		print2DArr (classes);
+		System.out.println("classTypes: ");
+		printArr (classTypes);
 	}
 	
 	
