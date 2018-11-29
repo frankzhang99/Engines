@@ -7,6 +7,7 @@ import Jama.*;
 
 public class MarkovMain {
 
+	//functions to print out 1D or 2D arrays 
 	public static void printArr (int[] A) {
 		for(int i = 0; i < A.length; i++) {
 			System.out.print(A[i] + " ");
@@ -50,12 +51,15 @@ public class MarkovMain {
 		}
 	}
 	
+	//function to check if int array contains only ones
 	public static boolean allOne (int[] A) {
 		for(int i = 0; i < A.length; i++) {
 			if (i != 1) return false;
 		}
 		return true;
 	}
+	
+	//function to copy sample to A, and returning a boolean to indicate whether anything is changed or not
 	public static boolean copy (int[] A, int[] sample) {
 		int num = A.length;
 		boolean flag = false;
@@ -69,7 +73,7 @@ public class MarkovMain {
 		return flag;
 	}
 	
-	
+	//find the reachable states from every state after any number of steps
 	public static int[] stepN (int[][] A, int n) {
 		int num = A.length;
 		int[] row = A[n];
@@ -88,6 +92,7 @@ public class MarkovMain {
 		return row;
 	}
 
+	//funciton to get the greatest common denominator of a pair of integers
 	public static int gcdInt (int a, int b) {
 		return BigInteger.valueOf(a).gcd(BigInteger.valueOf(b)).intValue();
 	}
@@ -139,6 +144,7 @@ public class MarkovMain {
 		return per;
 	}
 	
+	//find the stationary distribution given TPM of a communicating class
 	public static double[][] findStatDist (double[][] TPM) {
 		int num = TPM.length;
 		Matrix I = Matrix.identity(num, num);
@@ -157,8 +163,10 @@ public class MarkovMain {
 		
 		Scanner sc = new Scanner (file);
 		
+		//numClasses (small typo, should be numStates) represent the number of states in the markov chain
 		int numClasses = sc.nextInt();
 		double[][] TPM = new double[numClasses][numClasses];
+		//acc and accOne are matrices that contain 1 if one state can reach the other in one step, 0 otherwise
 		int[][] acc = new int[numClasses][numClasses];
 		int[][] accOne = new int[numClasses][numClasses];
 		for(int i = 0; i < numClasses; i++) {
@@ -169,6 +177,7 @@ public class MarkovMain {
 				accOne[i][j] = temp > 0 ? 1 : 0;
 			}
 		}
+		//construct the initial distribution, whether given or not
 		double[] alpha = new double[numClasses];
 		if (sc.hasNextDouble()) {
 			for(int i = 0; i < numClasses; i++) {
@@ -181,12 +190,14 @@ public class MarkovMain {
 			}
 		}
 		
-		//construct the accessible states
+		//construct the accessible states, after arbitrary steps
 		int[][] accN = new int[numClasses][numClasses];
 		for(int i = 0; i < numClasses; i++) {
 			accN[i] = stepN(acc, i);
 		}
 		
+		//calculate number of communicating classes in markov chain
+		//classesTemp: 2D boolean array to show whether or not two states belong to the same class
 		int classesCount = 0;
 		boolean[][] classesTemp = new boolean[numClasses][numClasses];
 		boolean[] flags = new boolean[numClasses];
@@ -210,6 +221,10 @@ public class MarkovMain {
 			}
 		}
 		
+		//classes: 2D array, (number of classes) by (number of states)
+		//The first positive number of entries in each row are the states in the communicating class
+		//the rest of the row is padded with -1, all -1 (in the entire program) should be ignored
+		//In addition, the ordering of classes here determine the labeling of the classes, so the 0 class is the first row and so on
 		int[][] classes = new int[classesCount][numClasses];
 		for(int i = 0; i < classesCount; i++) {
 			for(int j = 0; j < numClasses; j++) {
@@ -226,6 +241,7 @@ public class MarkovMain {
 			}
 		}
 		
+		//numStates: number of states in each class
 		int[] numStates = new int[classesCount];
 		for(int i = 0; i < classesCount; i++) {
 			int[] thisClass = classes[i];
@@ -236,6 +252,7 @@ public class MarkovMain {
 			numStates[i] = numInClass;
 		}
 		
+		//determine the class types, whether recurrent or transient
 		//true = recurrent, false = transient
 		boolean[] classTypes = new boolean[classesCount];
 		for(int i = 0; i < classesCount; i++) {
@@ -249,6 +266,8 @@ public class MarkovMain {
 			}
 			classTypes[i] = ans;
 		}
+		
+		//determine number of transient (recurrent) classse (states)
 		int numRecur = 0;
 		int numTrans = 0;
 		int numRecurStates = 0;
@@ -264,7 +283,7 @@ public class MarkovMain {
 		}
 		
 		
-		
+		//put all transient states in one array, sort in ascending order
 		int[] transStates = new int[numTransStates];
 		int count = 0;
 		for(int i = 0; i < classesCount; i++) {
@@ -277,6 +296,7 @@ public class MarkovMain {
 		}
 		Arrays.sort(transStates);
 		
+		//put all recurrent states in one array, sort in ascending order
 		int[] recurStates = new int[numRecurStates];
 		count = 0;
 		for(int i = 0; i < classesCount; i++) {
@@ -289,6 +309,7 @@ public class MarkovMain {
 		}
 		Arrays.sort(recurStates);
 		
+		//calculate periods for each class, by first constructing the TPM and calling helper function
 		int[] periods = new int[classesCount];
 		for(int i = 0; i < classesCount; i++) {
 			int[] thisClass = classes[i];
@@ -308,6 +329,8 @@ public class MarkovMain {
 		}
 		
 		//Fun with matrices
+		//At this point, JAMA library is used to complete matrix calculations
+		//https://math.nist.gov/javanumerics/jama/
 		double[][] T = new double[numTransStates][numTransStates];
 		for(int i = 0; i < numTransStates; i++) {
 			for(int j = 0; j < numTransStates; j++) {
@@ -423,53 +446,62 @@ public class MarkovMain {
 			}
 		}
 		
-		//output stream
-		System.out.println("TPM: ");
-		print2DArr(TPM);
-		System.out.println("accOne: ");
-		print2DArr(accOne);
-		System.out.println("alpha: ");
-		printArr (alpha);
-		System.out.println("accN: ");
-		print2DArr (accN);
+		//output stream with some explanation
+		
+		//original TMP
+		System.out.println("TPM: "); print2DArr(TPM);
+		//One step accessible states
+		System.out.println("accOne: "); print2DArr(accOne);
+		//Initial distribution
+		System.out.println("alpha: "); printArr (alpha);
+		//N-steps accessible states
+		System.out.println("accN: "); print2DArr (accN);
+		//Number of communicating classes
 		System.out.println("Number of Classes: " + classesCount);
-		System.out.println("classesTemp: ");
-		print2DArr (classesTemp);
-		System.out.println("classes: ");
-		print2DArr (classes);
-		System.out.println("num of states in each class: ");
-		printArr (numStates);
-		System.out.println("classTypes(true = recurrent): ");
-		printArr (classTypes);
+		//optional, please ignore
+		System.out.println("classesTemp: "); print2DArr (classesTemp);
+		//Communicating classes, padded with -1's that should be ignored
+		System.out.println("classes: ");print2DArr (classes);
+		//Number of states in each class, ordering with respect to above classes array
+		System.out.println("num of states in each class: "); printArr (numStates);
+		//Class types, ordering with respect to above classes array
+		System.out.println("classTypes(true = recurrent): "); printArr (classTypes);
+		//Number of recurrent and transient classes
 		System.out.println(numRecur + " recurrent classes; " + numTrans + " transient classes");
+		//Number of recurrent and transient states
 		System.out.println(numRecurStates + " recurrent states; " + numTransStates + " transient states");
-		System.out.println("periods: ");
-		printArr (periods);
-		System.out.println("Transient states: ");
-		printArr(transStates);
-		System.out.println("Recurrent states: ");
-		printArr(recurStates);
-		System.out.println("Matrix T: ");
-		print2DArr(T);
-		System.out.println("Matrix M: ");
-		print2DArr(M);
-		System.out.println("Matrix V: ");
-		print2DArr(V);
-		System.out.println("Trans prob: ");
-		print2DArr(transProb);
-		System.out.println("Recur prob: ");
-		print2DArr(recurProb);
-		System.out.println("Expected # of visits to each trans state: ");
-		print2DArr(transVisit);
+		//Periods of each class, ordering with respect to above classes array
+		System.out.println("periods: "); printArr (periods);
+		//Transient states (potentially empty), ascending order
+		System.out.println("Transient states: "); printArr(transStates);
+		//Recurrent states (potentially empty), ascending order
+		System.out.println("Recurrent states: "); printArr(recurStates);
+		//optional, please ignore
+		System.out.println("Matrix T: "); print2DArr(T);
+		//optional, please ignore
+		System.out.println("Matrix M: "); print2DArr(M);
+		//optional, please ignore
+		System.out.println("Matrix V: "); print2DArr(V);
+		//optional, please ignore
+		System.out.println("Trans prob: "); print2DArr(transProb);
+		//optional, please ignore
+		System.out.println("Recur prob: "); print2DArr(recurProb);
+		//Expected number of visits to each transient state, potentially empty
+		//ordering with respect to above "transient states" array
+		System.out.println("Expected # of visits to each trans state: "); print2DArr(transVisit);
+		//Expected time until some recurrent class is hit
 		System.out.println("Expected time until some recurrent class is hit: \n" + timeTilRecur);
-		System.out.println("Matrix R: ");
-		print2DArr(R);
-		System.out.println("Matrix H: ");
-		print2DArr(H);
-		System.out.println("Hitting probs: ");
-		printArr(hitProb);
-		System.out.println("Stationary Distributions: ");
-		print2DArr(statDist);
+		//optional, please ignore
+		System.out.println("Matrix R: "); print2DArr(R);
+		//optional, please ignore
+		System.out.println("Matrix H: "); print2DArr(H);
+		//Probability of hitting each recurrent class, ordering with respect to above classes array
+		System.out.println("Hitting probs: "); printArr(hitProb);
+		//Stationary distributions for recurrent classes
+		//contains all recurrent classes, with periodic ones only -1's
+		//ordering with respect to classes array
+		//please ignore the -1.0's
+		System.out.println("Stationary Distributions: "); print2DArr(statDist);
 	}
 	
 	
