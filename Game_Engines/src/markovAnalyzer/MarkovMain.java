@@ -1,7 +1,9 @@
 package markovAnalyzer;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.util.*;
+import Jama.*;
 
 public class MarkovMain {
 
@@ -86,7 +88,56 @@ public class MarkovMain {
 		return row;
 	}
 
+	public static int gcdInt (int a, int b) {
+		return BigInteger.valueOf(a).gcd(BigInteger.valueOf(b)).intValue();
+	}
 	
+	public static int findPeriod (int[][] TPM) {
+		int num = TPM.length;
+		boolean[][] steps = new boolean[num][num];
+		for(int i = 0; i < num; i++) {
+			for(int j = 0; j < num; j++) {
+				steps[i][j] = false;
+			}
+		}
+		for(int i = 0; i < num; i++) {
+			steps[0][i] = (TPM[0][i] == 1) ? true : false;
+		}
+		
+		for(int i = 1; i < num; i++) {
+			//traverse row i-1
+			for(int j = 0; j < num; j++) {
+				if(steps[i-1][j]) {
+					//copy row j from TPM to steps
+					for(int k = 0; k < num; k++) {
+						steps[i][k] = (TPM[j][k] == 1) ? true : false;
+					}
+				}
+			}
+		}
+		
+		//print2DArr(steps);
+		
+		int accIn = 0;
+		for(int i = 0; i < num; i++) {
+			accIn = (steps[i][0]) ? accIn + 1 : accIn;
+		}
+		if (accIn == 0) return 1;
+		int[] acc = new int[accIn];
+		int count = 0;
+		for(int i = 0; i < num; i++) {
+			if(steps[i][0]) {
+				acc[count] = i + 1;
+				count++;
+			}
+		}
+		int per = acc[0];
+		for(int i = 0; i < accIn - 1; i++) {
+			per = gcdInt(per, acc[i + 1]);
+		}
+		
+		return per;
+	}
 	
 	
 	public static void main(String[] args) throws Exception {
@@ -165,6 +216,16 @@ public class MarkovMain {
 			}
 		}
 		
+		int[] numStates = new int[classesCount];
+		for(int i = 0; i < classesCount; i++) {
+			int[] thisClass = classes[i];
+			int numInClass = 0;
+			for(int j = 0; j < thisClass.length; j++) {
+				numInClass = (thisClass[j] != -1) ? numInClass + 1 : numInClass;
+			}
+			numStates[i] = numInClass;
+		}
+		
 		//true = recurrent, false = transient
 		boolean[] classTypes = new boolean[classesCount];
 		for(int i = 0; i < classesCount; i++) {
@@ -178,7 +239,138 @@ public class MarkovMain {
 			}
 			classTypes[i] = ans;
 		}
+		int numRecur = 0;
+		int numTrans = 0;
+		int numRecurStates = 0;
+		int numTransStates = 0;
+		for(int i = 0; i < classesCount; i++) {
+			if(classTypes[i]) {
+				numRecur++;
+				numRecurStates += numStates[i];
+			} else {
+				numTrans++;
+				numTransStates += numStates[i];
+			}
+		}
 		
+		
+		
+		int[] transStates = new int[numTransStates];
+		int count = 0;
+		for(int i = 0; i < classesCount; i++) {
+			if(!classTypes[i]) {
+				for(int j = 0; j < numStates[i]; j++) {
+					transStates[count] = classes[i][j];
+					count++;
+				}
+			}
+		}
+		Arrays.sort(transStates);
+		
+		int[] recurStates = new int[numRecurStates];
+		count = 0;
+		for(int i = 0; i < classesCount; i++) {
+			if(classTypes[i]) {
+				for(int j = 0; j < numStates[i]; j++) {
+					recurStates[count] = classes[i][j];
+					count++;
+				}
+			}
+		}
+		Arrays.sort(recurStates);
+		
+		int[] periods = new int[classesCount];
+		for(int i = 0; i < classesCount; i++) {
+			int[] thisClass = classes[i];
+			int numInClass = 0;
+			for(int j = 0; j < thisClass.length; j++) {
+				numInClass = (thisClass[j] != -1) ? numInClass + 1 : numInClass;
+			}
+			int[][] tempTPM = new int[numInClass][numInClass];
+			for(int j = 0; j < numInClass; j++) {
+				for(int k = 0; k < numInClass; k++) {
+					tempTPM[j][k] = accOne[thisClass[j]][thisClass[k]];
+				}
+			}
+			//System.out.println("Got through: " + i);
+			//print2DArr(tempTPM);
+			periods[i] = findPeriod(tempTPM);
+		}
+		
+		
+		//Fun with matrices
+		double[][] T = new double[numTransStates][numTransStates];
+		for(int i = 0; i < numTransStates; i++) {
+			for(int j = 0; j < numTransStates; j++) {
+				T[i][j] = TPM[transStates[i]][transStates[j]];
+			}
+		}
+		Matrix matrixT = new Matrix(T);
+		Matrix idT = Matrix.identity(numTransStates, numTransStates);
+		Matrix oneT = new Matrix(numTransStates, 1, 1.0);
+		Matrix matrixV = (idT.minus(matrixT)).inverse();
+		Matrix matrixM = (matrixV).times(oneT);
+		double[][] M = matrixM.getArray();
+		double[][] V = matrixV.getArray();
+		
+		double[][] transProb = new double[numTransStates][1];
+		for(int i = 0; i < numTransStates; i++) {
+			transProb[i][0] = alpha[transStates[i]];
+		}
+		Matrix matrixTransProb = new Matrix(transProb);
+		
+		double[][] recurProb = new double[numRecurStates][1];
+		for(int i = 0; i < numRecurStates; i++) {
+			recurProb[i][0] = alpha[recurStates[i]];
+		}
+		Matrix matrixRecurProb = new Matrix(recurProb);
+		
+		//expected # of visits to each trans state
+		Matrix matrixTransVisit = matrixV.transpose().times(matrixTransProb);
+		double[][] transVisit = matrixTransVisit.getArray();
+		
+		//expected time until some recurrent class is hit
+		Matrix matrixTimeTilRecur = matrixM.transpose().times(matrixTransProb);
+		double timeTilRecur = matrixTimeTilRecur.getArray()[0][0];
+		
+		//prob of hitting each recur class
+		double[][] R = new double[numTransStates][numRecur];
+		for(int i = 0; i < numTransStates; i++) {
+			int recurCount = 0;
+			for(int j = 0; j < classesCount; j++) {
+				if(classTypes[j]) {
+					double temp = 0.0;
+					for(int k = 0; k < numStates[j]; k++) {
+						temp += TPM[transStates[i]][classes[j][k]];
+					}
+					R[i][recurCount] = temp;
+					recurCount++;
+				}
+			}
+		}
+		Matrix matrixR = new Matrix(R);
+		Matrix matrixH = matrixV.times(matrixR);
+		double[][] H = matrixH.getArray();
+		double[] hitProb = new double[numRecur];
+		
+		int recurCount = 0;
+		for(int i = 0; i < classesCount; i++) {
+			if(classTypes[i]) {
+				System.out.println("In If");
+				double temp = 0.0;
+				for(int j = 0; j < numStates[i]; j++) {
+					temp += alpha[classes[i][j]];
+				}
+				for(int j = 0; j < numTransStates; j++) {
+					temp += H[j][recurCount] * alpha[transStates[j]];
+				}
+				hitProb[recurCount] = temp;
+				recurCount++;
+			}
+		}
+		
+		
+		//output stream
 		System.out.println("TPM: ");
 		print2DArr(TPM);
 		System.out.println("accOne: ");
@@ -192,8 +384,37 @@ public class MarkovMain {
 		print2DArr (classesTemp);
 		System.out.println("classes: ");
 		print2DArr (classes);
-		System.out.println("classTypes: ");
+		System.out.println("num of states in each class: ");
+		printArr (numStates);
+		System.out.println("classTypes(true = recurrent): ");
 		printArr (classTypes);
+		System.out.println(numRecur + " recurrent classes; " + numTrans + " transient classes");
+		System.out.println(numRecurStates + " recurrent states; " + numTransStates + " transient states");
+		System.out.println("periods: ");
+		printArr (periods);
+		System.out.println("Transient states: ");
+		printArr(transStates);
+		System.out.println("Recurrent states: ");
+		printArr(recurStates);
+		System.out.println("Matrix T: ");
+		print2DArr(T);
+		System.out.println("Matrix M: ");
+		print2DArr(M);
+		System.out.println("Matrix V: ");
+		print2DArr(V);
+		System.out.println("Trans prob: ");
+		print2DArr(transProb);
+		System.out.println("Recur prob: ");
+		print2DArr(recurProb);
+		System.out.println("Expected # of visits to each trans state: ");
+		print2DArr(transVisit);
+		System.out.println("Expected time unitl some recurrent class is hit: \n" + timeTilRecur);
+		System.out.println("Matrix R: ");
+		print2DArr(R);
+		System.out.println("Matrix H: ");
+		print2DArr(H);
+		System.out.println("Hitting probs: ");
+		printArr(hitProb);
 	}
 	
 	
