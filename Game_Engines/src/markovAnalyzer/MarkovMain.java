@@ -139,6 +139,16 @@ public class MarkovMain {
 		return per;
 	}
 	
+	public static double[][] findStatDist (double[][] TPM) {
+		int num = TPM.length;
+		Matrix I = Matrix.identity(num, num);
+		Matrix P = new Matrix(TPM);
+		Matrix U = new Matrix(num, num, 1.0);
+		Matrix one = new Matrix(1, num, 1.0);
+		Matrix res = one.times(((I.minus(P)).plus(U)).inverse());
+		return res.getArray();
+	}
+	
 	
 	public static void main(String[] args) throws Exception {
 		// TODO Auto-generated method stub
@@ -297,7 +307,6 @@ public class MarkovMain {
 			periods[i] = findPeriod(tempTPM);
 		}
 		
-		
 		//Fun with matrices
 		double[][] T = new double[numTransStates][numTransStates];
 		for(int i = 0; i < numTransStates; i++) {
@@ -305,7 +314,12 @@ public class MarkovMain {
 				T[i][j] = TPM[transStates[i]][transStates[j]];
 			}
 		}
-		Matrix matrixT = new Matrix(T);
+		Matrix matrixT;
+		if(numTransStates == 0) {
+			matrixT = new Matrix(0, 0);
+		} else {
+			matrixT = new Matrix(T);
+		}
 		Matrix idT = Matrix.identity(numTransStates, numTransStates);
 		Matrix oneT = new Matrix(numTransStates, 1, 1.0);
 		Matrix matrixV = (idT.minus(matrixT)).inverse();
@@ -317,7 +331,13 @@ public class MarkovMain {
 		for(int i = 0; i < numTransStates; i++) {
 			transProb[i][0] = alpha[transStates[i]];
 		}
-		Matrix matrixTransProb = new Matrix(transProb);
+		//Matrix matrixTransProb = new Matrix(transProb);
+		Matrix matrixTransProb;
+		if(numTransStates == 0) {
+			matrixTransProb = new Matrix(0, 1);
+		} else {
+			matrixTransProb = new Matrix(transProb);
+		}
 		
 		double[][] recurProb = new double[numRecurStates][1];
 		for(int i = 0; i < numRecurStates; i++) {
@@ -348,7 +368,13 @@ public class MarkovMain {
 				}
 			}
 		}
-		Matrix matrixR = new Matrix(R);
+		//Matrix matrixR = new Matrix(R);
+		Matrix matrixR;
+		if(numTransStates == 0) {
+			matrixR = new Matrix(0, numRecur);
+		} else {
+			matrixR = new Matrix(R);
+		}
 		Matrix matrixH = matrixV.times(matrixR);
 		double[][] H = matrixH.getArray();
 		double[] hitProb = new double[numRecur];
@@ -356,7 +382,6 @@ public class MarkovMain {
 		int recurCount = 0;
 		for(int i = 0; i < classesCount; i++) {
 			if(classTypes[i]) {
-				System.out.println("In If");
 				double temp = 0.0;
 				for(int j = 0; j < numStates[i]; j++) {
 					temp += alpha[classes[i][j]];
@@ -369,6 +394,34 @@ public class MarkovMain {
 			}
 		}
 		
+		//finding stationary distributions for recurring classes
+		double[][] statDist = new double[numRecur][numClasses];
+		for(int i = 0; i < numRecur; i++) {
+			for(int j = 0; j < numClasses; j++) {
+				statDist[i][j] = -1.0;
+			}
+		}
+		recurCount = 0;
+		for(int i = 0; i < classesCount; i++) {
+			if(classTypes[i]) {
+				if(periods[i] == 1) {
+					//if aperiodic, calculate statDist
+					int numInClass = numStates[i];
+					double[][] P = new double[numInClass][numInClass];
+					for(int j = 0; j < numInClass; j++) {
+						for(int k = 0; k < numInClass; k++) {
+							P[j][k] = TPM[classes[i][j]][classes[i][k]];
+						}
+					}
+					double[][] temp = findStatDist(P);
+					for(int j = 0; j < numInClass; j++) {
+						statDist[recurCount][j] = temp[0][j];
+					}
+				}
+				//if periodic recurrent, leave row as -1
+				recurCount++;
+			}
+		}
 		
 		//output stream
 		System.out.println("TPM: ");
@@ -408,13 +461,15 @@ public class MarkovMain {
 		print2DArr(recurProb);
 		System.out.println("Expected # of visits to each trans state: ");
 		print2DArr(transVisit);
-		System.out.println("Expected time unitl some recurrent class is hit: \n" + timeTilRecur);
+		System.out.println("Expected time until some recurrent class is hit: \n" + timeTilRecur);
 		System.out.println("Matrix R: ");
 		print2DArr(R);
 		System.out.println("Matrix H: ");
 		print2DArr(H);
 		System.out.println("Hitting probs: ");
 		printArr(hitProb);
+		System.out.println("Stationary Distributions: ");
+		print2DArr(statDist);
 	}
 	
 	
